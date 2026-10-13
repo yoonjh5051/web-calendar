@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>로그인</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='6' y='10' width='52' height='48' rx='12' fill='%23FEE500'/><rect x='6' y='10' width='52' height='14' rx='7' fill='%23191919'/><text x='32' y='50' font-size='24' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23191919'>31</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    :root { --bg: #fee500; --card: #fff; --text: #191919; --sub: #6b6e75; --line: #e6e6e9; --field: #f6f6f7; color-scheme: light; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #16171a; --card: #1f2024; --text: #f1f2f4; --sub: #9a9da5; --line: #34363d; --field: #26272c; color-scheme: dark; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 16px;
+      background: var(--bg); color: var(--text);
+      font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      -webkit-font-smoothing: antialiased; letter-spacing: -0.01em;
+    }
+    .card {
+      width: 100%; max-width: 360px; background: var(--card); border-radius: 24px;
+      padding: 36px 28px 28px; box-shadow: 0 20px 60px rgba(0,0,0,.12);
+      animation: pop .35s cubic-bezier(.2,.9,.3,1.2);
+    }
+    @keyframes pop { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+    .logo {
+      width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 16px;
+      background: #fee500; color: #191919; display: grid; place-items: center;
+      font-weight: 800; font-size: 22px; box-shadow: inset 0 13px 0 #191919; padding-top: 12px;
+    }
+    @media (prefers-color-scheme: light) { .logo { background: #fff6a8; } }
+    h1 { text-align: center; font-size: 20px; margin: 0 0 6px; }
+    p.sub { text-align: center; color: var(--sub); margin: 0 0 26px; font-size: 14px; }
+    input {
+      width: 100%; height: 50px; border-radius: 14px; border: 1px solid var(--line);
+      background: var(--field); padding: 0 16px; font: inherit; font-size: 15px; color: inherit; outline: 0;
+      margin-bottom: 10px; transition: border-color .15s, background .15s;
+    }
+    input:focus { border-color: var(--text); background: var(--card); }
+    button {
+      width: 100%; height: 52px; border: 0; border-radius: 14px; margin-top: 8px;
+      background: #191919; color: #fff; font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
+      transition: transform .1s, opacity .15s;
+    }
+    @media (prefers-color-scheme: dark) { button { background: #fee500; color: #191919; } }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .6; }
+    .err { color: #f04452; font-size: 13px; min-height: 18px; margin: 4px 2px 0; }
+    .back { display: block; text-align: center; margin-top: 18px; color: var(--sub); font-size: 13px; text-decoration: none; }
+    .back:hover { color: var(--text); }
+    .shake { animation: shake .35s; }
+    @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  </style>
+</head>
+<body>
+  <form class="card" id="form" autocomplete="on">
+    <div class="logo">31</div>
+    <h1>관리자 로그인</h1>
+    <p class="sub">로그인하면 일정을 추가하고 수정할 수 있어요</p>
+    <input id="username" name="username" placeholder="아이디" autocomplete="username" required autofocus>
+    <input id="password" name="password" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+    <div class="err" id="err"></div>
+    <button type="submit" id="btn">로그인</button>
+    <a class="back" href="/">← 캘린더로 돌아가기</a>
+  </form>
+  <script>
+    const form = document.getElementById("form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btn"), err = document.getElementById("err");
+      btn.disabled = true; err.textContent = "";
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value,
+          }),
+        });
+        if (res.ok) { location.href = "/"; return; }
+        const data = await res.json().catch(() => ({}));
+        err.textContent = data.detail || "로그인에 실패했습니다.";
+        form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
+        document.getElementById("password").select();
+      } catch {
+        err.textContent = "서버에 연결할 수 없습니다.";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+services:
+  calendar:
+    build: .
+    image: my-calendar:latest
+    container_name: my-calendar
+    restart: unless-stopped
+    ports:
+      - "${PORT:-80}:8000"
+    env_file: .env
+    volumes:
+      - calendar-data:/data
+
+volumes:
+  calendar-data:

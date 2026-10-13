@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16171a" media="(prefers-color-scheme: dark)">
+  <title>Calendar</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='6' y='10' width='52' height='48' rx='12' fill='%23FEE500'/><rect x='6' y='10' width='52' height='14' rx='7' fill='%23191919'/><text x='32' y='50' font-size='24' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23191919'>31</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-logo">31</span>
+      <span class="brand-name" id="appTitle">Calendar</span>
+    </div>
+
+    <div class="mini" id="mini"></div>
+
+    <section class="side-sec">
+      <div class="side-head">
+        <span>캘린더</span>
+        <button class="icon-btn sm auth-only" id="addCalBtn" title="캘린더 추가">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <ul class="cal-list" id="calList"></ul>
+    </section>
+
+    <section class="side-sec auth-only">
+      <div class="side-head"><span>가져오기 · 내보내기</span></div>
+      <button class="side-action" id="importBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        ICS 파일 가져오기
+      </button>
+      <button class="side-action" id="subscribeBtn">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><path d="M18 2v4h-4M6 22v-4h4"/></svg>
+        ICS URL 구독 추가
+      </button>
+      <a class="side-action" href="/api/export.ics">
+        <svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        ICS 파일로 내보내기
+      </a>
+    </section>
+
+    <section class="side-sec auth-only">
+      <div class="side-head"><span>공개 설정</span></div>
+      <label class="side-toggle">
+        <span>
+          <b>지난 일정 숨기기</b>
+          <small>로그인하지 않은 방문자에게 오늘 이전 일정의 제목·내용을 숨겨요. 일정이 있었다는 것만 보여요.</small>
+        </span>
+        <input type="checkbox" id="hidePast" class="switch">
+      </label>
+    </section>
+
+    <div class="side-foot auth-only">
+      <span class="who"><span class="who-dot"></span>관리자 모드</span>
+      <button class="link-btn" id="logoutBtn">로그아웃</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <!-- Main month view -->
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" title="메뉴">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <button class="month-title" id="titleBtn" title="월 선택">
+        <span class="mt-month" id="monthLabel"></span>
+        <span class="mt-year" id="yearLabel"></span>
+        <svg class="mt-caret" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <input type="month" id="monthPicker" class="visually-hidden" tabindex="-1">
+      <div class="nav">
+        <button class="icon-btn" id="prevBtn" title="이전 달"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button class="today-btn" id="todayBtn">오늘</button>
+        <button class="icon-btn" id="nextBtn" title="다음 달"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="searchBtn" title="검색">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button class="primary-btn auth-only" id="newBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>일정 추가</span>
+      </button>
+    </header>
+
+    <div class="weekdays">
+      <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <!-- Day panel (side on desktop, bottom sheet on mobile) -->
+  <aside class="daypanel" id="dayPanel">
+    <div class="sheet-grip"></div>
+    <div class="dp-head">
+      <div>
+        <div class="dp-date" id="dpDate"></div>
+        <div class="dp-sub" id="dpSub"></div>
+      </div>
+      <button class="icon-btn dp-close" id="dpClose" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <ul class="dp-list" id="dpList"></ul>
+    <button class="dp-add auth-only" id="dpAdd">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> 이 날에 일정 추가
+    </button>
+  </aside>
+</div>
+
+<button class="fab auth-only" id="fab" title="일정 추가"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+
+<!-- Event detail -->
+<div class="modal" id="detailModal" role="dialog" aria-modal="true">
+  <div class="modal-card detail-card">
+    <div class="detail-top">
+      <span class="detail-cal" id="dCal"></span>
+      <div class="detail-actions">
+        <button class="icon-btn auth-only" id="dEdit" title="수정"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></button>
+        <button class="icon-btn auth-only danger" id="dDelete" title="삭제"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+        <button class="icon-btn" data-close title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+    </div>
+    <h2 class="detail-title" id="dTitle"></h2>
+    <div class="detail-row"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div id="dWhen"></div></div>
+    <div class="detail-row" id="dRepeatRow"><svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><div id="dRepeat"></div></div>
+    <div class="detail-row" id="dLocRow"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div id="dLoc"></div></div>
+    <div class="detail-row" id="dMemoRow"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5"/></svg><div id="dMemo" class="memo"></div></div>
+    <div class="detail-note auth-only" id="dSubNote">구독 중인 캘린더의 일정이에요. 원본 캘린더에서 수정하면 자동으로 반영됩니다.</div>
+  </div>
+</div>
+
+<!-- Event editor -->
+<div class="modal" id="editModal" role="dialog" aria-modal="true">
+  <form class="modal-card edit-card" id="editForm" autocomplete="off">
+    <div class="edit-head">
+      <button type="button" class="text-btn" data-close>취소</button>
+      <h3 id="editHeading">새 일정</h3>
+      <button type="submit" class="save-btn">저장</button>
+    </div>
+    <input class="title-input" id="fTitle" placeholder="일정 제목" maxlength="200" required>
+    <div class="cal-chips" id="fCals"></div>
+    <div class="ev-colors" id="fColors"></div>
+
+    <div class="field-group">
+      <label class="row switch-row">
+        <span>종일</span>
+        <input type="checkbox" id="fAllDay" class="switch">
+      </label>
+      <div class="row dt-row">
+        <span class="lbl">시작</span>
+        <div class="dt">
+          <input type="date" id="fStartDate" required>
+          <input type="time" id="fStartTime" step="300">
+        </div>
+      </div>
+      <div class="row dt-row">
+        <span class="lbl">종료</span>
+        <div class="dt">
+          <input type="date" id="fEndDate" required>
+          <input type="time" id="fEndTime" step="300">
+        </div>
+      </div>
+      <div class="row">
+        <span class="lbl">반복</span>
+        <select id="fRepeat">
+          <option value="">반복 안 함</option>
+          <option value="DAILY">매일</option>
+          <option value="WEEKLY">매주</option>
+          <option value="MONTHLY">매월</option>
+          <option value="YEARLY">매년</option>
+          <option value="CUSTOM" hidden>사용자 지정 (가져온 규칙)</option>
+        </select>
+      </div>
+      <div class="row" id="untilRow">
+        <span class="lbl">반복 종료</span>
+        <input type="date" id="fUntil">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="row icon-row">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <input id="fLocation" placeholder="장소" maxlength="300">
+      </div>
+      <div class="row icon-row top">
+        <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5"/></svg>
+        <textarea id="fMemo" placeholder="메모" rows="3" maxlength="5000"></textarea>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Calendar editor -->
+<div class="modal" id="calModal" role="dialog" aria-modal="true">
+  <form class="modal-card small-card" id="calForm" autocomplete="off">
+    <h3 id="calHeading">캘린더 추가</h3>
+    <input class="plain-input" id="cName" placeholder="캘린더 이름" maxlength="50" required>
+    <div class="palette" id="cPalette"></div>
+    <div class="sub-box" id="cSubBox">
+      <div class="row-stack">
+        <span class="lbl">구독 URL</span>
+        <input class="plain-input" id="cSubUrl" type="url" placeholder="https://… 또는 webcal://…">
+      </div>
+      <div class="row-stack">
+        <span class="lbl">동기화 주기</span>
+        <select id="cSubInterval" class="interval-select"></select>
+      </div>
+      <div class="sub-status">
+        <span id="cSubStatus"></span>
+        <button type="button" class="ghost-btn sm" id="cSyncNow">
+          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><path d="M18 2v4h-4M6 22v-4h4"/></svg>
+          지금 동기화
+        </button>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button type="button" class="text-btn danger" id="cDelete">삭제</button>
+      <span class="spacer"></span>
+      <button type="button" class="ghost-btn" data-close>취소</button>
+      <button type="submit" class="primary-btn">저장</button>
+    </div>
+  </form>
+</div>
+
+<!-- ICS import -->
+<div class="modal" id="importModal" role="dialog" aria-modal="true">
+  <form class="modal-card small-card" id="importForm">
+    <h3>ICS 파일 가져오기</h3>
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="iFile" accept=".ics,text/calendar" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      <strong id="dropText">.ics 파일을 끌어다 놓거나 클릭하세요</strong>
+      <small>구글 캘린더, 애플 캘린더, 아웃룩, 카카오톡 캘린더 내보내기 파일 지원</small>
+    </label>
+    <div class="row-stack">
+      <span class="lbl">가져올 캘린더</span>
+      <select id="iTarget"></select>
+    </div>
+    <div class="palette" id="iPalette"></div>
+    <p class="hint">같은 파일을 다시 가져오면 중복되지 않고 기존 일정이 갱신됩니다.</p>
+    <div class="card-actions">
+      <span class="spacer"></span>
+      <button type="button" class="ghost-btn" data-close>취소</button>
+      <button type="submit" class="primary-btn" id="iSubmit">가져오기</button>
+    </div>
+  </form>
+</div>
+
+<!-- ICS URL subscription -->
+<div class="modal" id="subModal" role="dialog" aria-modal="true">
+  <form class="modal-card small-card" id="subForm" autocomplete="off">
+    <h3>ICS URL 구독</h3>
+    <p class="hint top">구글·애플·아웃룩 캘린더의 "ICS 주소 / 공개 주소"를 붙여넣으면 주기적으로 자동 동기화됩니다.
+      구독한 캘린더는 원본을 그대로 따라가므로 여기서는 읽기 전용이에요.</p>
+    <div class="row-stack">
+      <span class="lbl">ICS URL</span>
+      <input class="plain-input" id="sUrl" type="text" inputmode="url" placeholder="https://… 또는 webcal://…" required>
+    </div>
+    <div class="row-stack">
+      <span class="lbl">이름 <small>(비우면 캘린더에 지정된 이름 사용)</small></span>
+      <input class="plain-input" id="sName" maxlength="50" placeholder="예: 회사 캘린더">
+    </div>
+    <div class="row-stack">
+      <span class="lbl">동기화 주기</span>
+      <select id="sInterval" class="interval-select"></select>
+    </div>
+    <div class="palette" id="sPalette"></div>
+    <div class="card-actions">
+      <span class="spacer"></span>
+      <button type="button" class="ghost-btn" data-close>취소</button>
+      <button type="submit" class="primary-btn" id="sSubmit">구독하기</button>
+    </div>
+  </form>
+</div>
+
+<!-- Choice dialog -->
+<div class="modal" id="choiceModal" role="dialog" aria-modal="true">
+  <div class="modal-card choice-card">
+    <h3 id="chTitle"></h3>
+    <p id="chMsg"></p>
+    <div class="choice-btns" id="chBtns"></div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="modal search-modal" id="searchModal" role="dialog" aria-modal="true">
+  <div class="modal-card search-card">
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" placeholder="일정 검색" autocomplete="off">
+      <button class="text-btn" data-close>닫기</button>
+    </div>
+    <ul class="search-results" id="searchResults"></ul>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/holidays.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

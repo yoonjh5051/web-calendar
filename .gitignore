@@ -1,0 +1,7 @@
+data/
+.env
+__pycache__/
+*.pyc
+
+# personal calendar data: place ICS files here on the server only, never commit them
+seed/*.ics
